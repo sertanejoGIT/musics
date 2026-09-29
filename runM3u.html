@@ -306,7 +306,940 @@
 
   </main>
 
-  <script src="./app.js"></script>
+  <script defer>
+"use strict";
+
+
+/*
+ * ============================================================
+ * CONFIGURAÇÃO
+ * ============================================================
+ *
+ * Se o playlist.m3u estiver na mesma pasta:
+ *
+ * ./playlist.m3u
+ *
+ * Ou você pode colocar uma URL completa:
+ *
+ * https://seusite.github.io/radio/playlist.m3u
+ *
+ * ============================================================
+ */
+
+const PLAYLIST_URL = "https://sertanejogit.github.io/musics/Hungria+Hip-Hop/hungriaHipHop.m3u";
+
+
+/*
+ * ============================================================
+ * ELEMENTOS
+ * ============================================================
+ */
+
+const audio =
+  document.getElementById("audio");
+
+const title =
+  document.getElementById("title");
+
+const artist =
+  document.getElementById("artist");
+
+const nextTrack =
+  document.getElementById("nextTrack");
+
+const counter =
+  document.getElementById("counter");
+
+const status =
+  document.getElementById("status");
+
+const playlistElement =
+  document.getElementById("playlist");
+
+const playButton =
+  document.getElementById("play");
+
+const nextButton =
+  document.getElementById("next");
+
+const previousButton =
+  document.getElementById("previous");
+
+
+/*
+ * ============================================================
+ * ESTADO
+ * ============================================================
+ */
+
+let playlist = [];
+
+let currentIndex = -1;
+
+let loading = false;
+
+
+/*
+ * ============================================================
+ * LER M3U
+ * ============================================================
+ */
+
+async function loadPlaylist() {
+
+  try {
+
+    setStatus(
+      "Baixando playlist..."
+    );
+
+    const response =
+      await fetch(
+        PLAYLIST_URL,
+        {
+          cache: "no-cache"
+        }
+      );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        `HTTP ${response.status}`
+      );
+
+    }
+
+
+    const text =
+      await response.text();
+
+
+    playlist =
+      parseM3U(text);
+
+
+    if (
+      playlist.length === 0
+    ) {
+
+      throw new Error(
+        "Nenhuma música encontrada no M3U."
+      );
+
+    }
+
+
+    renderPlaylist();
+
+
+    /*
+     * Começa pela primeira música.
+     */
+
+    await selectTrack(0, false);
+
+
+    setStatus(
+      `${playlist.length} músicas carregadas.`
+    );
+
+  }
+
+  catch (error) {
+
+    console.error(error);
+
+    setStatus(
+      "Erro ao carregar playlist: " +
+      error.message,
+      true
+    );
+
+  }
+
+}
+
+
+/*
+ * ============================================================
+ * PARSER M3U
+ * ============================================================
+ *
+ * Aceita:
+ *
+ * #EXTM3U
+ * #EXTINF:-1,Artista - Música
+ * https://...
+ *
+ * Também aceita duração:
+ *
+ * #EXTINF:210,Artista - Música
+ *
+ * ============================================================
+ */
+
+function parseM3U(text) {
+
+  const lines =
+    text
+      .split(/\r?\n/)
+      .map(
+        line => line.trim()
+      )
+      .filter(
+        line => line.length > 0
+      );
+
+
+  const result = [];
+
+  let metadata = null;
+
+
+  for (
+    const line of lines
+  ) {
+
+    /*
+     * Cabeçalho.
+     */
+
+    if (
+      line.toUpperCase() ===
+      "#EXTM3U"
+    ) {
+
+      continue;
+
+    }
+
+
+    /*
+     * Informação da faixa.
+     */
+
+    if (
+      line
+        .toUpperCase()
+        .startsWith("#EXTINF:")
+    ) {
+
+      const value =
+        line.substring(8);
+
+
+      const comma =
+        value.indexOf(",");
+
+
+      if (
+        comma !== -1
+      ) {
+
+        const duration =
+          value
+            .substring(
+              0,
+              comma
+            )
+            .trim();
+
+
+        const name =
+          value
+            .substring(
+              comma + 1
+            )
+            .trim();
+
+
+        metadata = {
+
+          duration:
+            Number(duration),
+
+          name
+
+        };
+
+      }
+
+      continue;
+
+    }
+
+
+    /*
+     * Ignora outras diretivas M3U.
+     */
+
+    if (
+      line.startsWith("#")
+    ) {
+
+      continue;
+
+    }
+
+
+    /*
+     * A linha é a URL da música.
+     */
+
+    if (
+      metadata
+    ) {
+
+      const parsed =
+        parseTitle(
+          metadata.name
+        );
+
+
+      result.push({
+
+        title:
+          parsed.title,
+
+        artist:
+          parsed.artist,
+
+        name:
+          metadata.name,
+
+        url:
+          line,
+
+        duration:
+          metadata.duration
+
+      });
+
+
+      metadata =
+        null;
+
+    }
+
+    else {
+
+      /*
+       * Também aceita M3U
+       * contendo somente URLs.
+       */
+
+      const parsed =
+        parseTitle(
+          getFileName(line)
+        );
+
+
+      result.push({
+
+        title:
+          parsed.title,
+
+        artist:
+          parsed.artist,
+
+        name:
+          parsed.name,
+
+        url:
+          line,
+
+        duration:
+          -1
+
+      });
+
+    }
+
+  }
+
+
+  return result;
+
+}
+
+
+/*
+ * ============================================================
+ * SEPARAR ARTISTA / MÚSICA
+ * ============================================================
+ *
+ * Exemplo:
+ *
+ * Hungria Hip Hop - Temporal
+ *
+ * vira:
+ *
+ * artista = Hungria Hip Hop
+ * título  = Temporal
+ *
+ * ============================================================
+ */
+
+function parseTitle(name) {
+
+  const separator =
+    " - ";
+
+
+  const index =
+    name.indexOf(
+      separator
+    );
+
+
+  if (
+    index !== -1
+  ) {
+
+    return {
+
+      artist:
+        name.substring(
+          0,
+          index
+        ).trim(),
+
+      title:
+        name.substring(
+          index +
+          separator.length
+        ).trim(),
+
+      name
+
+    };
+
+  }
+
+
+  return {
+
+    artist:
+      "Hungria Hip Hop",
+
+    title:
+      name,
+
+    name
+
+  };
+
+}
+
+
+/*
+ * ============================================================
+ * PEGAR NOME DO ARQUIVO
+ * ============================================================
+ */
+
+function getFileName(url) {
+
+  try {
+
+    const parsed =
+      new URL(url);
+
+
+    return decodeURIComponent(
+      parsed.pathname
+        .split("/")
+        .pop()
+    );
+
+  }
+
+  catch {
+
+    return url;
+
+  }
+
+}
+
+
+/*
+ * ============================================================
+ * SELECIONAR MÚSICA
+ * ============================================================
+ */
+
+async function selectTrack(
+  index,
+  autoplay = true
+) {
+
+  if (
+    playlist.length === 0
+  ) {
+
+    return;
+
+  }
+
+
+  /*
+   * Loop da playlist.
+   */
+
+  if (
+    index >= playlist.length
+  ) {
+
+    index = 0;
+
+  }
+
+
+  if (
+    index < 0
+  ) {
+
+    index =
+      playlist.length - 1;
+
+  }
+
+
+  currentIndex =
+    index;
+
+
+  const track =
+    playlist[currentIndex];
+
+
+  /*
+   * Atualiza interface.
+   */
+
+  updateTrackInfo(
+    track
+  );
+
+
+  /*
+   * Muda o áudio.
+   */
+
+  audio.src =
+    track.url;
+
+
+  audio.load();
+
+
+  /*
+   * Atualiza playlist visual.
+   */
+
+  updateActiveItem();
+
+
+  /*
+   * Toca automaticamente
+   * quando solicitado.
+   */
+
+  if (
+    autoplay
+  ) {
+
+    try {
+
+      await audio.play();
+
+      playButton.textContent =
+        "⏸ Pausar";
+
+      setStatus(
+        "Reproduzindo"
+      );
+
+    }
+
+    catch (error) {
+
+      /*
+       * Navegadores normalmente
+       * bloqueiam autoplay com som.
+       */
+
+      playButton.textContent =
+        "▶ Tocar";
+
+      setStatus(
+        "Clique em Tocar para iniciar."
+      );
+
+    }
+
+  }
+
+}
+
+
+/*
+ * ============================================================
+ * INFORMAÇÕES DA MÚSICA
+ * ============================================================
+ */
+
+function updateTrackInfo(
+  track
+) {
+
+  title.textContent =
+    track.title;
+
+  artist.textContent =
+    track.artist;
+
+
+  const nextIndex =
+    (
+      currentIndex + 1
+    ) % playlist.length;
+
+
+  const next =
+    playlist[nextIndex];
+
+
+  if (
+    next
+  ) {
+
+    nextTrack.textContent =
+      "Próxima: " +
+      next.artist +
+      " - " +
+      next.title;
+
+  }
+
+
+  counter.textContent =
+    `${currentIndex + 1} / ${playlist.length}`;
+
+}
+
+
+/*
+ * ============================================================
+ * TOGGLE PLAY / PAUSE
+ * ============================================================
+ */
+
+async function togglePlay() {
+
+  if (
+    audio.paused
+  ) {
+
+    try {
+
+      await audio.play();
+
+    }
+
+    catch {
+
+      setStatus(
+        "Não foi possível iniciar o áudio.",
+        true
+      );
+
+    }
+
+  }
+
+  else {
+
+    audio.pause();
+
+  }
+
+}
+
+
+/*
+ * ============================================================
+ * PRÓXIMA
+ * ============================================================
+ */
+
+async function nextTrackPlay() {
+
+  await selectTrack(
+    currentIndex + 1,
+    true
+  );
+
+}
+
+
+/*
+ * ============================================================
+ * ANTERIOR
+ * ============================================================
+ */
+
+async function previousTrackPlay() {
+
+  await selectTrack(
+    currentIndex - 1,
+    true
+  );
+
+}
+
+
+/*
+ * ============================================================
+ * QUANDO A MÚSICA TERMINA
+ * ============================================================
+ *
+ * Aqui acontece o looping.
+ *
+ * 01
+ * 02
+ * 03
+ * ...
+ * 45
+ * 01
+ * 02
+ *
+ * ============================================================
+ */
+
+audio.addEventListener(
+  "ended",
+  async () => {
+
+    await nextTrackPlay();
+
+  }
+);
+
+
+/*
+ * ============================================================
+ * EVENTOS DO PLAYER
+ * ============================================================
+ */
+
+audio.addEventListener(
+  "play",
+  () => {
+
+    playButton.textContent =
+      "⏸ Pausar";
+
+    setStatus(
+      "🔴 Reproduzindo"
+    );
+
+  }
+);
+
+
+audio.addEventListener(
+  "pause",
+  () => {
+
+    playButton.textContent =
+      "▶ Tocar";
+
+  }
+);
+
+
+audio.addEventListener(
+  "error",
+  () => {
+
+    setStatus(
+      "Erro ao reproduzir esta música.",
+      true
+    );
+
+  }
+);
+
+
+/*
+ * ============================================================
+ * BOTÕES
+ * ============================================================
+ */
+
+playButton.addEventListener(
+  "click",
+  togglePlay
+);
+
+
+nextButton.addEventListener(
+  "click",
+  nextTrackPlay
+);
+
+
+previousButton.addEventListener(
+  "click",
+  previousTrackPlay
+);
+
+
+/*
+ * ============================================================
+ * RENDERIZAR PLAYLIST
+ * ============================================================
+ */
+
+function renderPlaylist() {
+
+  playlistElement.innerHTML =
+    "";
+
+
+  playlist.forEach(
+    (
+      track,
+      index
+    ) => {
+
+      const item =
+        document.createElement(
+          "div"
+        );
+
+
+      item.className =
+        "item";
+
+
+      item.dataset.index =
+        index;
+
+
+      item.textContent =
+        `${index + 1}. ` +
+        `${track.artist} - ` +
+        `${track.title}`;
+
+
+      item.addEventListener(
+        "click",
+        () => {
+
+          selectTrack(
+            index,
+            true
+          );
+
+        }
+      );
+
+
+      playlistElement.appendChild(
+        item
+      );
+
+    }
+  );
+
+}
+
+
+/*
+ * ============================================================
+ * DESTACAR MÚSICA ATUAL
+ * ============================================================
+ */
+
+function updateActiveItem() {
+
+  const items =
+    playlistElement.querySelectorAll(
+      ".item"
+    );
+
+
+  items.forEach(
+    item => {
+
+      item.classList.remove(
+        "active"
+      );
+
+    }
+  );
+
+
+  const current =
+    playlistElement.querySelector(
+      `[data-index="${currentIndex}"]`
+    );
+
+
+  if (
+    current
+  ) {
+
+    current.classList.add(
+      "active"
+    );
+
+
+    current.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest"
+    });
+
+  }
+
+}
+
+
+/*
+ * ============================================================
+ * STATUS
+ * ============================================================
+ */
+
+function setStatus(
+  message,
+  error = false
+) {
+
+  status.textContent =
+    message;
+
+
+  status.classList.toggle(
+    "error",
+    error
+  );
+
+}
+
+
+/*
+ * ============================================================
+ * INICIAR
+ * ============================================================
+ */
+
+loadPlaylist();
+</script>
 
 </body>
 </html>
