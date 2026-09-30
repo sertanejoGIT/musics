@@ -1,0 +1,205 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background:
+    radial-gradient(
+      circle at top,
+      #292929,
+      #080808 70%
+    );
+
+  color: #fff;
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+}
+
+.radio {
+  width: min(600px, 92%);
+  padding: 30px;
+
+  background: rgba(25, 25, 25, .96);
+
+  border: 1px solid #333;
+  border-radius: 24px;
+
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, .6);
+
+  text-align: center;
+}
+
+.logo {
+  width: 150px;
+  height: 150px;
+
+  margin: 0 auto 25px;
+
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 65px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #ff1744,
+      #8e24aa
+    );
+
+  box-shadow:
+    0 15px 50px rgba(255, 23, 68, .3);
+}
+
+h1 {
+  margin: 0 0 8px;
+
+  font-size: 26px;
+}
+
+.live {
+  display: inline-block;
+
+  padding: 6px 14px;
+
+  margin-bottom: 25px;
+
+  border-radius: 30px;
+
+  background: #e50914;
+
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.live::before {
+  content: "●";
+  margin-right: 6px;
+}
+
+.title {
+  margin-top: 10px;
+
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.artist {
+  margin-top: 8px;
+
+  color: #aaa;
+  font-size: 15px;
+}
+
+audio {
+  width: 100%;
+  margin-top: 25px;
+}
+
+.buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+
+  margin-top: 20px;
+}
+
+button {
+  border: 0;
+
+  padding: 12px 20px;
+
+  border-radius: 10px;
+
+  background: #292929;
+  color: white;
+
+  cursor: pointer;
+
+  font-size: 14px;
+}
+
+button:hover {
+  background: #3a3a3a;
+}
+
+.play {
+  background: #e50914;
+}
+
+.play:hover {
+  background: #f5222d;
+}
+
+.next {
+  margin-top: 25px;
+
+  color: #777;
+
+  font-size: 13px;
+}
+
+.counter {
+  margin-top: 8px;
+
+  color: #555;
+
+  font-size: 12px;
+}
+
+.status {
+  margin-top: 18px;
+
+  color: #777;
+
+  font-size: 12px;
+}
+
+.error {
+  color: #ff5252;
+}
+
+.playlist {
+  margin-top: 30px;
+
+  max-height: 250px;
+
+  overflow-y: auto;
+
+  text-align: left;
+
+  border-top: 1px solid #333;
+}
+
+.item {
+  padding: 12px;
+
+  border-bottom: 1px solid #292929;
+
+  cursor: pointer;
+
+  font-size: 13px;
+}
+
+.item:hover {
+  background: #292929;
+}
+
+.item.active {
+  background: #35151a;
+  color: #ff5260;
+}
