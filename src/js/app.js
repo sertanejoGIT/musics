@@ -559,64 +559,48 @@ function getFilename(url) {
 // CARREGAR MÚSICA
 // ============================================================
 
-function loadTrack(index) {
+function loadTrack(index, autoplay = false) {
 
   if (!tracks.length) {
     return;
   }
 
-
-  /*
-   * Volta para a última música
-   */
-
   if (index < 0) {
-
-    index =
-      tracks.length - 1;
+    index = tracks.length - 1;
   }
 
-
-  /*
-   * Volta para a primeira música
-   */
-
   if (index >= tracks.length) {
-
     index = 0;
   }
 
-
-  currentIndex =
-    index;
-
+  currentIndex = index;
 
   const track =
     tracks[currentIndex];
-
 
   title.textContent =
     track.title ||
     "Sem título";
 
-
   artist.textContent =
     track.artist ||
     "Artista desconhecido";
 
-
   audio.src =
     track.url;
 
-
   audio.load();
-
 
   updateNextTrack();
 
   updateCounter();
 
   updatePlaylist();
+
+  // Inicia automaticamente quando solicitado
+  if (autoplay) {
+    playAudio();
+  }
 }
 
 
@@ -689,7 +673,7 @@ function nextTrackAction() {
 
 
   const wasPlaying =
-    !audio.paused;
+    audio.paused;
 
 
   loadTrack(
