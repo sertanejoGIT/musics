@@ -1,3 +1,4 @@
 Hungria Hip Hop|//sertanejogit.github.io/musics/Hungria+Hip-Hop/hungriaHipHop.m3u
 Lil Wayne|//sertanejogit.github.io/musics/Lil+Wayne/lilWayne.m3u
 Imagine Dragons|//sertanejogit.github.io/musics/Imagine+Dragons/imagineDragons.m3u
+Tribo da Periferia|//sertanejogit.github.io/musics/Tribo+da+Periferia/triboDaPeriferia.m3u
